@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import { useAsync } from "react-use"
 import { useParams } from 'next/navigation'
-import { Center, Container, Flex, Spinner, Image, Button, Stack, Text } from "@chakra-ui/react";
+import { Center, Container, Flex, Spinner, Image, Button, Stack, Text, VStack } from "@chakra-ui/react";
 import { getExperimentByName } from "../../../_utilities/ExperimentService"
 import { createSession, finishSession } from "../../../_utilities/sessionService"
 import { submitResponse } from "../../../_utilities/trialService"
@@ -25,6 +25,7 @@ export default function Trial({ params }) {
     const [showBreak, setShowBreak] = useState(false);
     const [nCorrect, setNCorrect] = useState(0);
     const [ended, setEnded] = useState(false);
+    const [loading, setLoading] = useState(false);
     // const [blockAc, setBlockAc] = useState(0.0);
     const [totAc, setTotAc] = useState(0.0);
     const router = useRouter();
@@ -62,21 +63,24 @@ export default function Trial({ params }) {
     // useEffect(, [exp.loading    ])
     const startTrial = async () => {
         try {
+            setLoading(true);
             console.log(`start ${data.value.exp.experiment_id}/${sessionName}`)
             const [sessionId, blocks, trials] = await createSession(data.value.exp.experiment_id, sessionName);
             console.log(sessionId);
             console.log(blocks);
             console.log(trials);
-            
+
             setSessionId(sessionId);
             setBlocks(blocks);
             setTrials(trials);
             const new_block = blocks.find(b => b.block_idx === blockIdx);
             setBlock(new_block);
             setTrial(trials.find(t => t.block_id = new_block.block_id && t.trial_idx === trialIdx));
+            setLoading(false);
         } catch (e) {
             console.log(e);
             setFail(true);
+            setLoading(false);
             throw e;
         }
     };
@@ -138,16 +142,23 @@ export default function Trial({ params }) {
                 data.error.message
             )}
             {sessionId === null && !data.loading && !!!data.error &&
-                <Button size="xl" colorPalette="blue" onClick={startTrial}>Start trial</Button>
+                <VStack>
+                    <Text textStyle="4xl" textAlign="center">You will see a word or picture at the top of the screen.</Text>
+                    <Text textStyle="4xl" textAlign="center">Click it, and choices will appear at the bottom.</Text>
+                    <Text textStyle="4xl" textAlign="center">Pick the choice you think goes with the one on top.</Text>
+                    <Center><Button loading={loading} size="xl" colorPalette="blue" onClick={startTrial}>Start trial</Button></Center>
+                </VStack>
             }
-            {showBreak &&
+            {
+                showBreak &&
                 <Stack>
                     <Text textStyle="4xl">You just finished block {blockIdx} out of {blocks.length} blocks.</Text>
                     {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {((nCorrect / blocks.length) * 100).toFixed(2)}%</Text>}
                     <Button size="xl" colorPalette="blue" onClick={nextBlock}>Start next block</Button>
                 </Stack>
             }
-            {!showBreak && sessionId !== null && trial !== null && !ended &&
+            {
+                !showBreak && sessionId !== null && trial !== null && !ended &&
                 // <h1>{experimentName} {userId}</h1>
                 <Flex direction="column" height="100%" rowGap="10%">
                     <Center height="50%" maxWidth="100%" >
@@ -164,13 +175,14 @@ export default function Trial({ params }) {
                         </Flex >}
                 </Flex >
             }
-            {ended &&
+            {
+                ended &&
                 <Stack>
                     <Text textStyle="4xl">You finished the session!</Text>
                     <Text textStyle="4xl">Please contact the researcher.</Text>
                     {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {((totAc / blocks.length) * 100).toFixed(2)}%</Text>}
                 </Stack>
             }
-        </Center>
-    </Container>
+        </Center >
+    </Container >
 }
