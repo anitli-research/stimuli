@@ -52,6 +52,11 @@ export default function Experiment() {
     name: "feedback",
   });
 
+  const accuracy = useController({
+    control: control,
+    name: "accuracy",
+  });
+
   const poolId = useController({
     control: control,
     name: "poolId",
@@ -76,6 +81,7 @@ export default function Experiment() {
     const exp = {
       "name": data.name,
       "feedback": data.feedback,
+      "accuracy": data.accuracy,
       "pool_id": data.poolId[0]
     };
     console.log(exp);
@@ -191,6 +197,19 @@ export default function Experiment() {
                   <Checkbox.HiddenInput {...register("feedback")} />
                   <Checkbox.Control />
                   <Checkbox.Label>Show feedback</Checkbox.Label>
+                </Checkbox.Root>
+              </Field.Root>
+            )}
+          />
+          <Controller
+            control={control}
+            name="accuracy"
+            render={({ field }) => (
+              <Field.Root>
+                <Checkbox.Root checked={field.value} onCheckedChange={({ checked }) => field.onChange(checked)}>
+                  <Checkbox.HiddenInput {...register("accuracy")} />
+                  <Checkbox.Control />
+                  <Checkbox.Label>Show accuracy</Checkbox.Label>
                 </Checkbox.Root>
               </Field.Root>
             )}

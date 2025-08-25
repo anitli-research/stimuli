@@ -9,8 +9,9 @@ import { submitResponse } from "../../../_utilities/trialService"
 import { toaster } from "@/components/ui/toaster"
 import { useRouter } from 'next/navigation';
 import { ospfGetURLs } from "@/app/_utilities/ospf";
+import { CiFaceFrown, CiFaceSmile } from "react-icons/ci";
 
-export default function Session ({ params }) {
+export default function Session({ params }) {
     const { experimentName, sessionName } = useParams();
     const [fail, setFail] = useState(false);
     const [sessionId, setSessionId] = useState(null);
@@ -28,6 +29,7 @@ export default function Session ({ params }) {
     const [loading, setLoading] = useState(false);
     const [blockAcc, setBlockAcc] = useState(0.0);
     const [totAc, setTotAc] = useState(0.0);
+    const [showFeedback, setShowFeedback] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -90,6 +92,10 @@ export default function Session ({ params }) {
         setShowArray(true);
     }
 
+    const handleShowFeedback = () => {
+        setShowFeedback(null);
+    }
+
     const choice = async (c) => {
         const submitted_at = Date.now();
         const took = (new Date(Math.abs(submitted_at - renderTs))).getMilliseconds();
@@ -97,6 +103,10 @@ export default function Session ({ params }) {
         await submitResponse(trial.trial_id, submitted_at, trial.trial_id, took, c, is_correct);
         if (is_correct) {
             setNCorrect(nCorrect + 1);
+        }
+        if (data.value.exp.feedback !== 0) {
+            setShowFeedback(is_correct);
+            setTimeout(handleShowFeedback, 2000);
         }
         // end of a block
         if (trialIdx === block.n_trials) {
@@ -123,7 +133,7 @@ export default function Session ({ params }) {
 
     const nextBlock = () => {
         setNCorrect(0);
-        const old_blockIdx = blockIdx; 
+        const old_blockIdx = blockIdx;
         setBlockIdx(old_blockIdx + 1);
         const new_block = blocks.find(b => b.block_idx === (old_blockIdx + 1));
         console.log(new_block);
@@ -152,7 +162,17 @@ export default function Session ({ params }) {
             {data.error && (
                 data.error.message
             )}
-            {sessionId === null && !data.loading && !!!data.error &&
+            {showFeedback === true &&
+                <Center>
+                    <CiFaceSmile size="100%" color="green"/>
+                </Center>
+            }
+            {showFeedback === false &&
+                <Center>
+                    <CiFaceFrown size="100%" color="red"/>
+                </Center>
+            }
+            {showFeedback === null && sessionId === null && !data.loading && !!!data.error &&
                 <VStack>
                     <Text textStyle="4xl" textAlign="center">You will see a word or picture at the top of the screen.</Text>
                     <Text textStyle="4xl" textAlign="center">Click it, and choices will appear at the bottom.</Text>
@@ -160,15 +180,15 @@ export default function Session ({ params }) {
                     <Center><Button loading={loading} size="xl" colorPalette="blue" onClick={startSession}>Start trial</Button></Center>
                 </VStack>
             }
-            {
+            {showFeedback === null &&
                 showBreak &&
                 <Stack>
                     <Text textStyle="4xl">You just finished block {blockIdx} out of {blocks.length} blocks.</Text>
-                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(blockAcc)}%</Text>}
+                    {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(blockAcc)}%</Text>}
                     <Button size="xl" colorPalette="blue" onClick={nextBlock}>Start next block</Button>
                 </Stack>
             }
-            {
+            {showFeedback === null &&
                 !showBreak && sessionId !== null && trial !== null && !ended &&
                 // <h1>{experimentName} {userId}</h1>
                 <Flex direction="column" height="100%" rowGap="10%">
@@ -183,12 +203,12 @@ export default function Session ({ params }) {
                         </Flex >}
                 </Flex >
             }
-            {
+            {showFeedback === null &&
                 ended &&
                 <Stack>
                     <Text textStyle="4xl">You finished the session!</Text>
                     <Text textStyle="4xl">Please contact the researcher.</Text>
-                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
+                    {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
                 </Stack>
             }
         </Center >

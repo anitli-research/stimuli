@@ -1,4 +1,4 @@
-export async function createExperiment(exp,blocks, rel) {
+export async function createExperiment(exp, blocks, rel) {
     let body = new FormData();
 
     for (let key in exp) {
