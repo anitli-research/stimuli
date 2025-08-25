@@ -1,5 +1,5 @@
 export async function getSessions() {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}session/`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}session/users`, {
         method: 'get',
     });
 
@@ -11,11 +11,11 @@ export async function getSessions() {
     return res2;
 };
 
-export async function createSession(experimentId, sessionName) {
+export async function createSession(experimentId, userName) {
     let payload = new FormData();
 
     payload.append("experimentId", experimentId);
-    payload.append("sessionName", sessionName);
+    payload.append("userName", userName);
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}session/`, {
         method: 'post',

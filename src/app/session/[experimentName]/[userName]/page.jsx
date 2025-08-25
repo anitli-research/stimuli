@@ -12,7 +12,7 @@ import { ospfGetURLs } from "@/app/_utilities/ospf";
 import { CiFaceFrown, CiFaceSmile } from "react-icons/ci";
 
 export default function Session({ params }) {
-    const { experimentName, sessionName } = useParams();
+    const { experimentName, userName } = useParams();
     const [fail, setFail] = useState(false);
     const [sessionId, setSessionId] = useState(null);
     const [trials, setTrials] = useState(null);
@@ -66,8 +66,8 @@ export default function Session({ params }) {
     const startSession = async () => {
         try {
             setLoading(true);
-            console.log(`start ${data.value.exp.experiment_id}/${sessionName}`)
-            const [sessionId, blocks, trials] = await createSession(data.value.exp.experiment_id, sessionName);
+            console.log(`start ${data.value.exp.experiment_id}/${userName}`)
+            const [sessionId, blocks, trials] = await createSession(data.value.exp.experiment_id, userName);
             console.log(sessionId);
             console.log(blocks);
             console.log(trials);

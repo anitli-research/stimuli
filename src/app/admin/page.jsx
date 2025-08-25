@@ -29,13 +29,12 @@ export default function PoolList() {
     let sessions = useAsync(async () => await getSessions(), [loading]);
 
     // const generateCsv = async () => {
-    const generateCsv = async (session_id) => {
+    const generateCsv = async (username) => {
         console.log("making csv");
-        console.log(session_id);
+        console.log(username);
+        const usrname = username[0];
 
-        const s = sessions.value.find(s => s.session_id = session_id);
-
-        let responses = await getResponses(s.session_id);
+        let responses = await getResponses(usrname);
         for (let i = 0; i < responses.length; i++) {
             responses[i].distractors = `"${responses[i].distractors.join(',')}"`;
         }
@@ -57,7 +56,7 @@ export default function PoolList() {
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `responses_${s.session_id}.csv`);
+        link.setAttribute('download', `responses_${usrname}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -206,7 +205,7 @@ export default function PoolList() {
         <Container h="100%">
             {!authCtx.authorized &&
                 <Center h="100%">
-                    <PasswordInput placeholder="lg" size="lg" value={pwd} onChange={(e) => setPwd(e.target.value)}/>
+                    <PasswordInput placeholder="Insert your password" size="lg" value={pwd} onChange={(e) => setPwd(e.target.value)}/>
                     <Button type="submit" onClick={handleAuth}>Log in</Button>
                 </Center>}
             {authCtx.authorized &&
@@ -289,7 +288,7 @@ export default function PoolList() {
                             </Table.Body>
                         </Table.Root>
                     }
-                    <Heading size="4xl">Sessions:</Heading>
+                    <Heading size="4xl">Sessions by user:</Heading>
                     <HStack>
 
                         <Select.Root collection={collectionSession} value={session}
@@ -313,9 +312,9 @@ export default function PoolList() {
                             <Portal>
                                 <Select.Positioner>
                                     <Select.Content>
-                                        {collectionSession.items.map((session) => (
-                                            <Select.Item item={session.session_id} key={session.session_id}>
-                                                {session.name}
+                                        {collectionSession.items.map((e,idx) => (
+                                            <Select.Item item={e.username} key={idx}>
+                                                {e.username}
                                                 <Select.ItemIndicator />
                                             </Select.Item>
                                         ))}

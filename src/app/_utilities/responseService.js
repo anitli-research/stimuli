@@ -1,7 +1,7 @@
-export async function getResponses(session_id) {
+export async function getResponses(username) {
     // let body = new FormData();
     // body.append("session_id", session_id)
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}response/${session_id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}csv/${username}`, {
         method: 'get',
         // body: body
     });
