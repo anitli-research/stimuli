@@ -26,7 +26,7 @@ export default function Session ({ params }) {
     const [nCorrect, setNCorrect] = useState(0);
     const [ended, setEnded] = useState(false);
     const [loading, setLoading] = useState(false);
-    // const [blockAc, setBlockAc] = useState(0.0);
+    const [blockAcc, setBlockAcc] = useState(0.0);
     const [totAc, setTotAc] = useState(0.0);
     const router = useRouter();
 
@@ -103,7 +103,8 @@ export default function Session ({ params }) {
             const block_acc = ((is_correct ? nCorrect + 1 : nCorrect) / block.n_trials);
             const tot_acc = totAc + block_acc;
             setTotAc(tot_acc);
-            
+            setBlockAcc(block_acc);
+            console.log(`blockAcc: ${block_acc} and totAcc: ${tot_acc}`);
             // last block
             if (blockIdx === blocks.length) {
                 await finishSession(sessionId, (tot_acc * 100 / blocks.length).toFixed(2));
@@ -139,12 +140,8 @@ export default function Session ({ params }) {
         return arr;
     };
 
-    const calcAcc = () => {     
-        return ((nCorrect / blocks.length) * 100).toFixed(2);
-    };
-
-    const calTotAcc = () => {
-        return ((totAc / blocks.length) * 100).toFixed(2);
+    const formatAcc = (acc) => {
+        return (acc * 100).toFixed(2);
     };
 
     return <Container h="100%">
@@ -167,7 +164,7 @@ export default function Session ({ params }) {
                 showBreak &&
                 <Stack>
                     <Text textStyle="4xl">You just finished block {blockIdx} out of {blocks.length} blocks.</Text>
-                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {calcAcc()}%</Text>}
+                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(blockAcc)}%</Text>}
                     <Button size="xl" colorPalette="blue" onClick={nextBlock}>Start next block</Button>
                 </Stack>
             }
@@ -191,7 +188,7 @@ export default function Session ({ params }) {
                 <Stack>
                     <Text textStyle="4xl">You finished the session!</Text>
                     <Text textStyle="4xl">Please contact the researcher.</Text>
-                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {calTotAcc()}%</Text>}
+                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
                 </Stack>
             }
         </Center >
