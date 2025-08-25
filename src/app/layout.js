@@ -3,7 +3,7 @@ import "./globals.css";
 import { Provider } from "@/components/ui/provider"
 import { Box } from "@chakra-ui/react";
 import { Toaster, toaster } from "@/components/ui/toaster"
-
+import { AuthProvider } from "@/components/ui/AuthProvider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +30,12 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider>
-          <Box height="100vh" width="100vw" py={10} px={32}>
-            <Toaster />
-            {children}
-          </Box>
+          <AuthProvider>
+            <Box height="100vh" width="100vw" py={10} px={32}>
+              <Toaster />
+              {children}
+            </Box>
+          </AuthProvider>
         </Provider>
       </body>
     </html>

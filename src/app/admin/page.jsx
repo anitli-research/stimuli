@@ -1,8 +1,8 @@
 "use client"
-import { Button, SkeletonText, CloseButton, Dialog, Table, Flex, Heading, Select, createListCollection, Spinner, Portal, Link as ChakraLink, Field, Input, HStack, Center } from "@chakra-ui/react"
+import { Button, SkeletonText, CloseButton, Dialog, Table, Flex, Heading, Select, createListCollection, Spinner, Portal, Link as ChakraLink, Field, Input, HStack, Center, Container } from "@chakra-ui/react"
 import { LuFilePlus, LuFlaskConical, LuFolderSync, LuCirclePlay } from 'react-icons/lu'
 import Link from 'next/link'
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useContext } from "react"
 import { useAsync } from "react-use"
 import { getPools, getStimuliFromPoolId, getStimulus } from "../_utilities/PoolService"
 import { getExperiments } from "../_utilities/ExperimentService"
@@ -11,14 +11,19 @@ import { toaster } from "@/components/ui/toaster"
 import { useRouter } from 'next/navigation';
 import { getSessions } from "../_utilities/sessionService"
 import { getResponses } from "../_utilities/responseService"
+import { PasswordInput } from "@/components/ui/password-input"
+import { AuthContext } from '../../components/ui/AuthProvider';
+
 
 export default function PoolList() {
     const router = useRouter();
+    const authCtx = useContext(AuthContext);
     const [loading, setLoading] = useState(false);
     const [pool, setPool] = useState([]);
     const [session, setSession] = useState([]);
     const [validSessionName, setValidSessionName] = useState(true);
-    const [sessionName, setSessionName] = useState("")
+    const [sessionName, setSessionName] = useState("");
+    const [pwd, setPwd] = useState("");
     let pools = useAsync(async () => await ospfGetPools(), [loading]);
     let exps = useAsync(async () => await getExperiments(), [loading]);
     let sessions = useAsync(async () => await getSessions(), [loading]);
@@ -27,9 +32,9 @@ export default function PoolList() {
     const generateCsv = async (session_id) => {
         console.log("making csv");
         console.log(session_id);
-        
+
         const s = sessions.value.find(s => s.session_id = session_id);
-        
+
         let responses = await getResponses(s.session_id);
         for (let i = 0; i < responses.length; i++) {
             responses[i].distractors = `"${responses[i].distractors.join(',')}"`;
@@ -186,124 +191,143 @@ export default function PoolList() {
         }
         setLoading(false);
     }
-
+    const handleAuth = async () => {
+        
+        const res = await authCtx.login(pwd);
+        if (!res) {
+            toaster.create({
+                description: "Unauthorized",
+                type: "error",
+            });
+            authCtx.setCred(null);
+        }
+    }
     return (
-        <Flex direction="column" justify="center" gap="4">
-            <Button loading={loading} colorPalette="purple" minW="15%" alignSelf="end" onClick={syncFtp}>
-                <LuFolderSync /> Sync
-            </Button>
-            <Heading size="4xl" fontWeight="bold" textAlign="center">
-                Add a new stimuli pool
-                <Link href="admin/pool/add">
-                    <Button colorPalette="green" ml={4}>
-                        <LuFilePlus />
+        <Container h="100%">
+            {!authCtx.authorized &&
+                <Center h="100%">
+                    <PasswordInput placeholder="lg" size="lg" value={pwd} onChange={(e) => setPwd(e.target.value)}/>
+                    <Button type="submit" onClick={handleAuth}>Log in</Button>
+                </Center>}
+            {authCtx.authorized &&
+                <Flex direction="column" justify="center" gap="4">
+                    <Button loading={loading} colorPalette="purple" minW="15%" alignSelf="end" onClick={syncFtp}>
+                        <LuFolderSync /> Sync
                     </Button>
-                </Link>
-            </Heading>
-            <PoolSelect />
-            <ChakraLink asChild colorPalette="gray" alignSelf="end">
-                <Link href="admin/experiment/add" >
-                    <Button colorPalette="blue" minW="30%">
-                        <LuFlaskConical /> New Experiment
-                    </Button>
-                </Link>
-            </ChakraLink>
-            <Heading size="4xl">Experiments:</Heading>
-            {exps.loading && <SkeletonText noOfLines={5} gap="4" />}
-            {!exps.loading &&
-                <Table.Root size="sm" variant="outline" interactive showColumnBorder>
-                    <Table.Header>
-                        <Table.Row>
-                            <Table.ColumnHeader htmlWidth="30%">Name</Table.ColumnHeader>
-                            <Table.ColumnHeader htmlWidth="30%">Pool</Table.ColumnHeader>
-                            <Table.ColumnHeader htmlWidth="10%">Show Feedback</Table.ColumnHeader>
-                            <Table.ColumnHeader htmlWidth="10%"></Table.ColumnHeader>
-                        </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                        {exps.value.map((exp) => (
-                            <Table.Row key={exp.experiment_id}>
-                                <Table.Cell>{exp.name}</Table.Cell>
-                                <Table.Cell>{exp.pool_id}</Table.Cell>
-                                <Table.Cell>{exp.feedback}</Table.Cell>
-                                {/* <Table.Cell><Button onClick={}><LuCirclePlay /> Session </Button></Table.Cell> */}
-                                <Table.Cell>
-                                    <Dialog.Root
-                                        placement="center"
-                                        motionPreset="slide-in-bottom"
-                                    >
-                                        <Dialog.Trigger asChild>
-                                            <Button><LuCirclePlay /> Session </Button>
-                                        </Dialog.Trigger>
-                                        <Portal>
-                                            <Dialog.Backdrop />
-                                            <Dialog.Positioner>
-                                                <Dialog.Content>
-                                                    <Dialog.Header>
-                                                        <Dialog.Title>Insert the session name</Dialog.Title>
-                                                    </Dialog.Header>
-                                                    <Dialog.Body>
-                                                        <Field.Root invalid={!validSessionName}>
-                                                            <Input value={sessionName} onChange={(e) => setSessionName(e.currentTarget.value)} />
-                                                            <Field.ErrorText>Invalid session name!</Field.ErrorText>
-                                                        </Field.Root>
-                                                    </Dialog.Body>
-                                                    <Dialog.Footer>
-                                                        <Dialog.ActionTrigger asChild>
-                                                            <Button variant="outline">Cancel</Button>
-                                                        </Dialog.ActionTrigger>
-                                                        <Button onClick={_ => handleStartSession(exp)}>Save</Button>
-                                                    </Dialog.Footer>
-                                                    <Dialog.CloseTrigger asChild>
-                                                        <CloseButton size="sm" />
-                                                    </Dialog.CloseTrigger>
-                                                </Dialog.Content>
-                                            </Dialog.Positioner>
-                                        </Portal>
-                                    </Dialog.Root>
-                                </Table.Cell>
-                            </Table.Row>
-                        ))}
-                    </Table.Body>
-                </Table.Root>
-            }
-            <Heading size="4xl">Sessions:</Heading>
-            <HStack>
-
-                <Select.Root collection={collectionSession} value={session}
-                    onValueChange={async (e) => {
-                        generateCsv(e.value);
-                        // setSession(e.value);
-                    }}>
-                    <Select.HiddenSelect />
-                    {/* <Select.Label>Available sessions</Select.Label> */}
-                    <Select.Control>
-                        <Select.Trigger>
-                            <Select.ValueText placeholder="Select a session" />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                            {sessions.loading && (
-                                <Spinner size="xs" borderWidth="1.5px" color="fg.muted" />
-                            )}
-                            <Select.Indicator />
-                        </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Portal>
-                        <Select.Positioner>
-                            <Select.Content>
-                                {collectionSession.items.map((session) => (
-                                    <Select.Item item={session.session_id} key={session.session_id}>
-                                        {session.name}
-                                        <Select.ItemIndicator />
-                                    </Select.Item>
+                    <Heading size="4xl" fontWeight="bold" textAlign="center">
+                        Add a new stimuli pool
+                        <Link href="admin/pool/add">
+                            <Button colorPalette="green" ml={4}>
+                                <LuFilePlus />
+                            </Button>
+                        </Link>
+                    </Heading>
+                    <PoolSelect />
+                    <ChakraLink asChild colorPalette="gray" alignSelf="end">
+                        <Link href="admin/experiment/add" >
+                            <Button colorPalette="blue" minW="30%">
+                                <LuFlaskConical /> New Experiment
+                            </Button>
+                        </Link>
+                    </ChakraLink>
+                    <Heading size="4xl">Experiments:</Heading>
+                    {exps.loading && <SkeletonText noOfLines={5} gap="4" />}
+                    {!exps.loading &&
+                        <Table.Root size="sm" variant="outline" interactive showColumnBorder>
+                            <Table.Header>
+                                <Table.Row>
+                                    <Table.ColumnHeader htmlWidth="30%">Name</Table.ColumnHeader>
+                                    <Table.ColumnHeader htmlWidth="30%">Pool</Table.ColumnHeader>
+                                    <Table.ColumnHeader htmlWidth="10%">Show Feedback</Table.ColumnHeader>
+                                    <Table.ColumnHeader htmlWidth="10%"></Table.ColumnHeader>
+                                </Table.Row>
+                            </Table.Header>
+                            <Table.Body>
+                                {exps.value.map((exp) => (
+                                    <Table.Row key={exp.experiment_id}>
+                                        <Table.Cell>{exp.name}</Table.Cell>
+                                        <Table.Cell>{exp.pool_id}</Table.Cell>
+                                        <Table.Cell>{exp.feedback}</Table.Cell>
+                                        {/* <Table.Cell><Button onClick={}><LuCirclePlay /> Session </Button></Table.Cell> */}
+                                        <Table.Cell>
+                                            <Dialog.Root
+                                                placement="center"
+                                                motionPreset="slide-in-bottom"
+                                            >
+                                                <Dialog.Trigger asChild>
+                                                    <Button><LuCirclePlay /> Session </Button>
+                                                </Dialog.Trigger>
+                                                <Portal>
+                                                    <Dialog.Backdrop />
+                                                    <Dialog.Positioner>
+                                                        <Dialog.Content>
+                                                            <Dialog.Header>
+                                                                <Dialog.Title>Insert the session name</Dialog.Title>
+                                                            </Dialog.Header>
+                                                            <Dialog.Body>
+                                                                <Field.Root invalid={!validSessionName}>
+                                                                    <Input value={sessionName} onChange={(e) => setSessionName(e.currentTarget.value)} />
+                                                                    <Field.ErrorText>Invalid session name!</Field.ErrorText>
+                                                                </Field.Root>
+                                                            </Dialog.Body>
+                                                            <Dialog.Footer>
+                                                                <Dialog.ActionTrigger asChild>
+                                                                    <Button variant="outline">Cancel</Button>
+                                                                </Dialog.ActionTrigger>
+                                                                <Button onClick={_ => handleStartSession(exp)}>Save</Button>
+                                                            </Dialog.Footer>
+                                                            <Dialog.CloseTrigger asChild>
+                                                                <CloseButton size="sm" />
+                                                            </Dialog.CloseTrigger>
+                                                        </Dialog.Content>
+                                                    </Dialog.Positioner>
+                                                </Portal>
+                                            </Dialog.Root>
+                                        </Table.Cell>
+                                    </Table.Row>
                                 ))}
-                            </Select.Content>
-                        </Select.Positioner>
-                    </Portal>
-                </Select.Root>
-                {/* <Button onClick={e => generateCsv()}>Generate CSV</Button> */}
-            </HStack>
+                            </Table.Body>
+                        </Table.Root>
+                    }
+                    <Heading size="4xl">Sessions:</Heading>
+                    <HStack>
 
-        </Flex >
+                        <Select.Root collection={collectionSession} value={session}
+                            onValueChange={async (e) => {
+                                generateCsv(e.value);
+                                // setSession(e.value);
+                            }}>
+                            <Select.HiddenSelect />
+                            {/* <Select.Label>Available sessions</Select.Label> */}
+                            <Select.Control>
+                                <Select.Trigger>
+                                    <Select.ValueText placeholder="Select a session" />
+                                </Select.Trigger>
+                                <Select.IndicatorGroup>
+                                    {sessions.loading && (
+                                        <Spinner size="xs" borderWidth="1.5px" color="fg.muted" />
+                                    )}
+                                    <Select.Indicator />
+                                </Select.IndicatorGroup>
+                            </Select.Control>
+                            <Portal>
+                                <Select.Positioner>
+                                    <Select.Content>
+                                        {collectionSession.items.map((session) => (
+                                            <Select.Item item={session.session_id} key={session.session_id}>
+                                                {session.name}
+                                                <Select.ItemIndicator />
+                                            </Select.Item>
+                                        ))}
+                                    </Select.Content>
+                                </Select.Positioner>
+                            </Portal>
+                        </Select.Root>
+                        {/* <Button onClick={e => generateCsv()}>Generate CSV</Button> */}
+                    </HStack>
+
+                </Flex >
+            }
+        </Container>
     )
 }
