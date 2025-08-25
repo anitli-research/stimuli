@@ -10,7 +10,7 @@ import { toaster } from "@/components/ui/toaster"
 import { useRouter } from 'next/navigation';
 import { ospfGetURLs } from "@/app/_utilities/ospf";
 
-export default function Trial({ params }) {
+export default function Session ({ params }) {
     const { experimentName, sessionName } = useParams();
     const [fail, setFail] = useState(false);
     const [sessionId, setSessionId] = useState(null);
@@ -61,7 +61,7 @@ export default function Trial({ params }) {
         }
     }, []);
     // useEffect(, [exp.loading    ])
-    const startTrial = async () => {
+    const startSession = async () => {
         try {
             setLoading(true);
             console.log(`start ${data.value.exp.experiment_id}/${sessionName}`)
@@ -73,9 +73,9 @@ export default function Trial({ params }) {
             setSessionId(sessionId);
             setBlocks(blocks);
             setTrials(trials);
-            const new_block = blocks.find(b => b.block_idx === blockIdx);
+            const new_block = blocks.find(b => b.block_idx === 1);
             setBlock(new_block);
-            setTrial(trials.find(t => t.block_id = new_block.block_id && t.trial_idx === trialIdx));
+            setTrial(trials.find(t => t.block_id === new_block.block_id && t.trial_idx === 1));
             setLoading(false);
         } catch (e) {
             console.log(e);
@@ -98,12 +98,15 @@ export default function Trial({ params }) {
         if (is_correct) {
             setNCorrect(nCorrect + 1);
         }
+        // end of a block
         if (trialIdx === block.n_trials) {
-            const ac = ((is_correct ? nCorrect + 1 : nCorrect) / block.n_trials);
-            setTotAc(totAc + ac)
-
+            const block_acc = ((is_correct ? nCorrect + 1 : nCorrect) / block.n_trials);
+            const tot_acc = totAc + block_acc;
+            setTotAc(tot_acc);
+            
+            // last block
             if (blockIdx === blocks.length) {
-                await finishSession(sessionId, ((totAc + ac) * 100 / blocks.length).toFixed(2));
+                await finishSession(sessionId, (tot_acc * 100 / blocks.length).toFixed(2));
                 setEnded(true);
                 return;
             } else {
@@ -112,17 +115,20 @@ export default function Trial({ params }) {
             }
         }
         setShowArray(false);
-        setTrialIdx(trialIdx + 1);
-        setTrial(trials.find(t => t.block_id = block.block_id && t.trial_idx === trialIdx));
+        const old_idx = trialIdx;
+        setTrialIdx(old_idx + 1);
+        setTrial(trials.find(t => t.block_id === block.block_id && t.trial_idx === (old_idx + 1)));
     };
 
     const nextBlock = () => {
         setNCorrect(0);
-        setBlockIdx(blockIdx + 1);
-        const new_block = blocks.find(b => b.block_idx === blockIdx);
+        const old_blockIdx = blockIdx; 
+        setBlockIdx(old_blockIdx + 1);
+        const new_block = blocks.find(b => b.block_idx === (old_blockIdx + 1));
+        console.log(new_block);
         setBlock(new_block);
         setTrialIdx(1);
-        setTrial(trials.find(t => t.block_id = new_block.block_id && t.trial_idx === trialIdx));
+        setTrial(trials.find(t => t.block_id === new_block.block_id && t.trial_idx === 1));
         setShowBreak(false);
     };
 
@@ -131,6 +137,14 @@ export default function Trial({ params }) {
         const rIdx = Math.floor(Math.random() * (arr.length + 1));
         arr.splice(rIdx, 0, trial.expected);
         return arr;
+    };
+
+    const calcAcc = () => {     
+        return ((nCorrect / blocks.length) * 100).toFixed(2);
+    };
+
+    const calTotAcc = () => {
+        return ((totAc / blocks.length) * 100).toFixed(2);
     };
 
     return <Container h="100%">
@@ -146,14 +160,14 @@ export default function Trial({ params }) {
                     <Text textStyle="4xl" textAlign="center">You will see a word or picture at the top of the screen.</Text>
                     <Text textStyle="4xl" textAlign="center">Click it, and choices will appear at the bottom.</Text>
                     <Text textStyle="4xl" textAlign="center">Pick the choice you think goes with the one on top.</Text>
-                    <Center><Button loading={loading} size="xl" colorPalette="blue" onClick={startTrial}>Start trial</Button></Center>
+                    <Center><Button loading={loading} size="xl" colorPalette="blue" onClick={startSession}>Start trial</Button></Center>
                 </VStack>
             }
             {
                 showBreak &&
                 <Stack>
                     <Text textStyle="4xl">You just finished block {blockIdx} out of {blocks.length} blocks.</Text>
-                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {((nCorrect / blocks.length) * 100).toFixed(2)}%</Text>}
+                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {calcAcc()}%</Text>}
                     <Button size="xl" colorPalette="blue" onClick={nextBlock}>Start next block</Button>
                 </Stack>
             }
@@ -167,9 +181,6 @@ export default function Trial({ params }) {
                     {showArray &&
                         <Flex direction="row" justify="space-between" height="40%" width="100%" gap="3%" >
                             {genArray().map((e, idx) => {
-                                console.log("array");
-                                console.log(e);
-                                console.log(idx);
                                 return <Image key={`${e}_${idx}`} src={`${data.value.pool[e]}`} fit="scale-down" minWidth={0} cursor="pointer" maxHeight="100%" onClick={() => choice(e)} />
                             })}
                         </Flex >}
@@ -180,7 +191,7 @@ export default function Trial({ params }) {
                 <Stack>
                     <Text textStyle="4xl">You finished the session!</Text>
                     <Text textStyle="4xl">Please contact the researcher.</Text>
-                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {((totAc / blocks.length) * 100).toFixed(2)}%</Text>}
+                    {data.value.exp.feedback !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {calTotAcc()}%</Text>}
                 </Stack>
             }
         </Center >

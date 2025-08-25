@@ -14,6 +14,7 @@ import { ospfGetPools, ospfGetStimuli } from "../../../_utilities/ospf"
 import { useAsync } from "react-use"
 import { createExperiment } from "../../../_utilities/ExperimentService"
 import { LuPlus, LuFlaskConical } from 'react-icons/lu'
+import { useRouter } from 'next/navigation';
 
 const items = [
   { block_idx: 1, type: "rel", n_dist: 2 },
@@ -29,6 +30,7 @@ const block_types = createListCollection({
 })
 
 export default function Experiment() {
+  const router = useRouter();
   const title = "Add a new experiment"
   useEffect(() => {
     document.title = title
@@ -67,7 +69,7 @@ export default function Experiment() {
 
   const [relation, setRelation] = useState({});
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Creating new experiment");
     console.log(data);
     console.log(blocks);
@@ -77,7 +79,8 @@ export default function Experiment() {
       "pool_id": data.poolId[0]
     };
     console.log(exp);
-    createExperiment(exp, blocks, relation);
+    await createExperiment(exp, blocks, relation);
+    router.push("/admin");
   };
 
   const [loading, setLoading] = useState(false);
