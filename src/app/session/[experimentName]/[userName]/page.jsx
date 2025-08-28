@@ -164,19 +164,33 @@ export default function Session({ params }) {
             )}
             {showFeedback === true &&
                 <Center>
-                    <CiFaceSmile size="100%" color="green"/>
+                    <CiFaceSmile size="100%" color="green" />
                 </Center>
             }
             {showFeedback === false &&
                 <Center>
-                    <CiFaceFrown size="100%" color="red"/>
+                    <CiFaceFrown size="100%" color="red" />
                 </Center>
             }
             {showFeedback === null && sessionId === null && !data.loading && !!!data.error &&
                 <VStack>
-                    <Text textStyle="4xl" textAlign="center">You will see a word or picture at the top of the screen.</Text>
-                    <Text textStyle="4xl" textAlign="center">Click it, and choices will appear at the bottom.</Text>
-                    <Text textStyle="4xl" textAlign="center">Pick the choice you think goes with the one on top.</Text>
+                    <Text textStyle="3xl" textAlign="center">
+                        You will see a word or picture at the top of the screen.
+                        <br />
+                        Click it, and choices will appear at the bottom.
+                        <br />
+                        Pick the choice you think goes with the one on top.
+                        <br />
+                        Sometimes you will see:
+                        <br />
+                        Happy face = correct
+                        <br />
+                        Sad face = incorrect
+                        <br />
+                        Other times, you will not see if you are correct.
+                        <br />
+                        When the session ends, please tell your researcher right away.
+                    </Text>
                     <Center><Button loading={loading} size="xl" colorPalette="blue" onClick={startSession}>Start trial</Button></Center>
                 </VStack>
             }

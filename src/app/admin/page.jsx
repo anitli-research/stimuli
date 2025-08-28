@@ -238,15 +238,17 @@ export default function PoolList() {
                                     <Table.ColumnHeader htmlWidth="30%">Name</Table.ColumnHeader>
                                     <Table.ColumnHeader htmlWidth="30%">Pool</Table.ColumnHeader>
                                     <Table.ColumnHeader htmlWidth="10%">Show Feedback</Table.ColumnHeader>
+                                    <Table.ColumnHeader htmlWidth="10%">Show Accuracy</Table.ColumnHeader>
                                     <Table.ColumnHeader htmlWidth="10%"></Table.ColumnHeader>
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
                                 {exps.value.map((exp) => (
-                                    <Table.Row key={exp.experiment_id}>
+                                    <Table.Row key={exp.experiment_id} onClick={() => console.log(exp)}>
                                         <Table.Cell>{exp.name}</Table.Cell>
                                         <Table.Cell>{exp.pool_id}</Table.Cell>
-                                        <Table.Cell>{exp.feedback}</Table.Cell>
+                                        <Table.Cell>{exp.feedback === 1 ? "true" : "false"}</Table.Cell>
+                                        <Table.Cell>{exp.feedback === 1 ? "true" : "false"}</Table.Cell>
                                         {/* <Table.Cell><Button onClick={}><LuCirclePlay /> Session </Button></Table.Cell> */}
                                         <Table.Cell>
                                             <Dialog.Root
