@@ -226,8 +226,7 @@ export default function Session({ params }) {
                     <Text textStyle="4xl">You finished the session!</Text>
                     <Text textStyle="4xl">Please contact the researcher.</Text>
                     {block.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your block accuracy was: {formatAcc(blockAcc)}%</Text>}
-                    {/* {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your total accuracy was: {formatAcc(totAc / blocks.length)}%</Text>} */}
-                    {1 && <Text textAlign="center" textStyle="3xl">Your total accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
+                    {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your total accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
                 </Stack>
             }
         </Center >

@@ -48,6 +48,12 @@ export default function Experiment() {
     name: "poolId",
   });
 
+  const accuracy = useController({
+    control: control,
+    name: "accuracy",
+  });
+
+
   const stId = useController({
     control: control,
     name: "stId",
@@ -67,16 +73,17 @@ export default function Experiment() {
 
   const onSubmit = async (data) => {
     console.log("Creating new experiment");
-    let new_blocks =  [...blocks];
-    
+    let new_blocks = [...blocks];
+
     if (selBlock !== null) {
       new_blocks[selBlock].rel = relation;
-    } 
+    }
 
     // console.log(new_blocks);
 
     const exp = {
       "name": data.name,
+      "accuracy": data.accuracy,
       "pool_id": data.poolId[0]
     };
     console.log(exp);
@@ -216,6 +223,21 @@ export default function Experiment() {
             )} />
           <Field.ErrorText>Please, select a stimuli pool.</Field.ErrorText>
         </Field.Root>
+        <HStack>
+          <Controller
+            control={control}
+            name="accuracy"
+            render={({ field }) => (
+              <Field.Root>
+                <Checkbox.Root checked={field.value} onCheckedChange={({ checked }) => field.onChange(checked)}>
+                  <Checkbox.HiddenInput {...register("accuracy")} />
+                  <Checkbox.Control />
+                  <Checkbox.Label>Show accuracy</Checkbox.Label>
+                </Checkbox.Root>
+              </Field.Root>
+            )}
+          />
+        </HStack>
         <Separator size="lg" />
         {poolId.field.value === undefined && <Heading size="4xl">Select a stimuli pool!</Heading>}
         {poolId.field.value !== undefined &&
