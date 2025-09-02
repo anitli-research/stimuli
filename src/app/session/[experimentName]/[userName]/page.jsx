@@ -19,8 +19,8 @@ export default function Session({ params }) {
     const [trial, setTrial] = useState(null);
     const [blocks, setBlocks] = useState(null);
     const [block, setBlock] = useState(null);
-    const [blockIdx, setBlockIdx] = useState(1);
-    const [trialIdx, setTrialIdx] = useState(1);
+    const [blockIdx, setBlockIdx] = useState(0);
+    const [trialIdx, setTrialIdx] = useState(0);
     const [showArray, setShowArray] = useState(false);
     const [renderTs, setRenderTs] = useState(null);
     const [showBreak, setShowBreak] = useState(false);
@@ -30,6 +30,7 @@ export default function Session({ params }) {
     const [blockAcc, setBlockAcc] = useState(0.0);
     const [totAc, setTotAc] = useState(0.0);
     const [showFeedback, setShowFeedback] = useState(null);
+    const [showAcc, setShowAcc] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -75,9 +76,9 @@ export default function Session({ params }) {
             setSessionId(sessionId);
             setBlocks(blocks);
             setTrials(trials);
-            const new_block = blocks.find(b => b.block_idx === 1);
+            const new_block = blocks.find(b => b.block_idx === 0);
             setBlock(new_block);
-            setTrial(trials.find(t => t.block_id === new_block.block_id && t.trial_idx === 1));
+            setTrial(trials.find(t => t.block_id === new_block.block_id && t.trial_idx === 0));
             setLoading(false);
         } catch (e) {
             console.log(e);
@@ -104,19 +105,19 @@ export default function Session({ params }) {
         if (is_correct) {
             setNCorrect(nCorrect + 1);
         }
-        if (data.value.exp.feedback !== 0) {
+        if (block.feedback !== 0) {
             setShowFeedback(is_correct);
             setTimeout(handleShowFeedback, 2000);
         }
         // end of a block
-        if (trialIdx === block.n_trials) {
+        if (trialIdx === (block.n_trials -1)) {
             const block_acc = ((is_correct ? nCorrect + 1 : nCorrect) / block.n_trials);
             const tot_acc = totAc + block_acc;
             setTotAc(tot_acc);
             setBlockAcc(block_acc);
             console.log(`blockAcc: ${block_acc} and totAcc: ${tot_acc}`);
             // last block
-            if (blockIdx === blocks.length) {
+            if (blockIdx === (blocks.length - 1)) {
                 await finishSession(sessionId, (tot_acc * 100 / blocks.length).toFixed(2));
                 setEnded(true);
                 return;
@@ -138,8 +139,10 @@ export default function Session({ params }) {
         const new_block = blocks.find(b => b.block_idx === (old_blockIdx + 1));
         console.log(new_block);
         setBlock(new_block);
-        setTrialIdx(1);
-        setTrial(trials.find(t => t.block_id === new_block.block_id && t.trial_idx === 1));
+        setTrialIdx(0);
+        console.log(trials);
+        setTrial(trials.find(t => t.block_id === new_block.block_id && t.trial_idx === 0));
+        console.log(trial);
         setShowBreak(false);
     };
 
@@ -197,8 +200,8 @@ export default function Session({ params }) {
             {showFeedback === null &&
                 showBreak &&
                 <Stack>
-                    <Text textStyle="4xl">You just finished block {blockIdx} out of {blocks.length} blocks.</Text>
-                    {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(blockAcc)}%</Text>}
+                    <Text textStyle="4xl">You just finished block {blockIdx + 1} out of {blocks.length} blocks.</Text>
+                    {block.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(blockAcc)}%</Text>}
                     <Button size="xl" colorPalette="blue" onClick={nextBlock}>Start next block</Button>
                 </Stack>
             }
@@ -222,7 +225,9 @@ export default function Session({ params }) {
                 <Stack>
                     <Text textStyle="4xl">You finished the session!</Text>
                     <Text textStyle="4xl">Please contact the researcher.</Text>
-                    {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
+                    {block.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your block accuracy was: {formatAcc(blockAcc)}%</Text>}
+                    {/* {data.value.exp.accuracy !== 0 && <Text textAlign="center" textStyle="3xl">Your total accuracy was: {formatAcc(totAc / blocks.length)}%</Text>} */}
+                    {1 && <Text textAlign="center" textStyle="3xl">Your total accuracy was: {formatAcc(totAc / blocks.length)}%</Text>}
                 </Stack>
             }
         </Center >

@@ -43,17 +43,6 @@ export default function Experiment() {
 
   const [blocks, setBlocks] = useState([]);
 
-
-  const feedback = useController({
-    control: control,
-    name: "feedback",
-  });
-
-  const accuracy = useController({
-    control: control,
-    name: "accuracy",
-  });
-
   const poolId = useController({
     control: control,
     name: "poolId",
@@ -78,12 +67,16 @@ export default function Experiment() {
 
   const onSubmit = async (data) => {
     console.log("Creating new experiment");
-    console.log(data);
-    console.log(blocks);
+    let new_blocks =  [...blocks];
+    
+    if (selBlock !== null) {
+      new_blocks[selBlock].rel = relation;
+    } 
+
+    // console.log(new_blocks);
+
     const exp = {
       "name": data.name,
-      "feedback": data.feedback,
-      "accuracy": data.accuracy,
       "pool_id": data.poolId[0]
     };
     console.log(exp);
@@ -108,11 +101,12 @@ export default function Experiment() {
   }, [pools.value]);
 
   const addBlock = (e) => {
-    let block = { id: nextBlock, n_dist: 0, n_trials: 1, feedback: false, metrics: false, rel: {} };
+    // let block = { id: nextBlock, n_dist: 0, n_trials: 1, feedback: false, accuracy: false, rel: {} };
+    let block = { n_dist: 0, n_trials: 1, feedback: false, accuracy: false, rel: {} };
     const new_blocks = [...blocks, block];
     setSelBlock(new_blocks.length - 1);
     setBlocks(new_blocks);
-    setValue("stId", undefined);
+    setValue("stId", null);
     setValue("related", undefined);
   };
 
@@ -151,9 +145,9 @@ export default function Experiment() {
     setBlocks(new_blocks);
   };
 
-  const updateBlockMetric = (block_idx, metrics) => {
+  const updateBlockAccuracy = (block_idx, accuracy) => {
     let new_blocks = blocks.map((block, idx) =>
-      idx === block_idx ? { ...block, metrics: metrics } : block
+      idx === block_idx ? { ...block, accuracy: accuracy } : block
     )
     setBlocks(new_blocks);
   };
@@ -162,16 +156,16 @@ export default function Experiment() {
     updateBlockRel(selBlock, relation);
     setSelBlock(block_idx);
     setRelation(blocks[block_idx].rel);
-    setValue("stId", undefined);
-    setValue("related", undefined);
+    setValue("stId", null);
+    setValue("related", []);
   };
 
   const deleteBlock = (block_idx) => {
     const new_blocks = [...blocks.slice(0, block_idx), ...blocks.slice(block_idx + 1)];
     setBlocks(new_blocks);
     setSelBlock(null);
-    setValue("stId", undefined);
-    setValue("related", undefined);
+    setValue("stId", null);
+    setValue("related", []);
   };
 
   return <Container>
@@ -222,34 +216,6 @@ export default function Experiment() {
             )} />
           <Field.ErrorText>Please, select a stimuli pool.</Field.ErrorText>
         </Field.Root>
-        <HStack>
-          <Controller
-            control={control}
-            name="feedback"
-            render={({ field }) => (
-              <Field.Root>
-                <Checkbox.Root checked={field.value} onCheckedChange={({ checked }) => field.onChange(checked)}>
-                  <Checkbox.HiddenInput {...register("feedback")} />
-                  <Checkbox.Control />
-                  <Checkbox.Label>Show feedback</Checkbox.Label>
-                </Checkbox.Root>
-              </Field.Root>
-            )}
-          />
-          <Controller
-            control={control}
-            name="accuracy"
-            render={({ field }) => (
-              <Field.Root>
-                <Checkbox.Root checked={field.value} onCheckedChange={({ checked }) => field.onChange(checked)}>
-                  <Checkbox.HiddenInput {...register("accuracy")} />
-                  <Checkbox.Control />
-                  <Checkbox.Label>Show accuracy</Checkbox.Label>
-                </Checkbox.Root>
-              </Field.Root>
-            )}
-          />
-        </HStack>
         <Separator size="lg" />
         {poolId.field.value === undefined && <Heading size="4xl">Select a stimuli pool!</Heading>}
         {poolId.field.value !== undefined &&
@@ -264,14 +230,14 @@ export default function Experiment() {
                   <Table.ColumnHeader textAlign="center" htmlWidth="20%"># of distractors</Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="center" htmlWidth="20%">Type</Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="center" htmlWidth="10%">Feedback</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="center" htmlWidth="10%">Metrics</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="center" htmlWidth="10%">Accuracy</Table.ColumnHeader>
                   <Table.ColumnHeader textAlign="center" htmlWidth="10%"></Table.ColumnHeader>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
                 {blocks.map((block, block_idx) => (
                   // <Table.Row key={block.id} onClick={() => handleTableClick(block_idx)}  data-selected={selBlock === block_idx ? "" : undefined}>
-                  <Table.Row key={block.id} data-selected={selBlock === block_idx ? "" : undefined}>
+                  <Table.Row key={block_idx} data-selected={selBlock === block_idx ? "" : undefined}>
                     <Table.Cell>
                       <Center>
                         <RadioGroup.Root value={selBlock}>
@@ -294,7 +260,7 @@ export default function Experiment() {
                       </NumberInput.Root>
                     </Table.Cell>
                     <Table.Cell>
-                      <NumberInput.Root defaultValue={1} min={0} max={stimuli.value.length - 1} onValueChange={(e) => updateBlockNDist(block_idx, parseInt(e.value))}>
+                      <NumberInput.Root defaultValue={0} min={0} max={stimuli.value.length - 1} onValueChange={(e) => updateBlockNDist(block_idx, parseInt(e.value))}>
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
@@ -339,8 +305,8 @@ export default function Experiment() {
                     </Table.Cell>
                     <Table.Cell textAlign="center">
                       <Checkbox.Root
-                        checked={block.metrics}
-                        onCheckedChange={(e) => updateBlockMetric(block_idx, !!e.checked)}
+                        checked={block.accuracy}
+                        onCheckedChange={(e) => updateBlockAccuracy(block_idx, !!e.checked)}
                       >
                         <Checkbox.HiddenInput />
                         <Checkbox.Control />

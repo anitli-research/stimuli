@@ -249,7 +249,7 @@ export default function PoolList() {
                                             <ButtonGroup size="sm"  >
 
                                                 <ChakraLink asChild colorPalette="gray" alignSelf="end">
-                                                    <Link href={`admin/experiment/${exp.experiment_id}`} >
+                                                    <Link href={`admin/experiment/${exp.name}`} >
                                                         <Button colorPalette="blue"> <LuPencil /> </Button>
                                                     </Link>
                                                 </ChakraLink>

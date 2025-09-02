@@ -25,6 +25,20 @@ export async function createExperiment(exp, blocks, rel) {
     return true;
 };
 
+export async function getExperimentById(experiment_id) {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}experiment/${experiment_id}`, {
+        method: 'GET',
+    });
+
+    if (res.status !== 200) {
+        throw new Error("Invalid experiment name");
+    }
+
+    const exp = await res.json();
+    // console.log(exp);
+    return exp;
+}
+
 export async function getExperimentByName(experimentName) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}experiment/${experimentName}`, {
         method: 'GET',
