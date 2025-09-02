@@ -1,6 +1,6 @@
 "use client"
-import { Button, SkeletonText, CloseButton, Dialog, Table, Flex, Heading, Select, createListCollection, Spinner, Portal, Link as ChakraLink, Field, Input, HStack, Center, Container } from "@chakra-ui/react"
-import { LuFilePlus, LuFlaskConical, LuFolderSync, LuCirclePlay } from 'react-icons/lu'
+import { Button, SkeletonText, CloseButton, Dialog, Table, Flex, Heading, Select, createListCollection, Spinner, Portal, Link as ChakraLink, Field, Input, HStack, Center, Container, ButtonGroup } from "@chakra-ui/react"
+import { LuFilePlus, LuFlaskConical, LuFolderSync, LuCirclePlay, LuPencil } from 'react-icons/lu'
 import Link from 'next/link'
 import { useEffect, useState, useMemo, useContext } from "react"
 import { useAsync } from "react-use"
@@ -191,7 +191,7 @@ export default function PoolList() {
         setLoading(false);
     }
     const handleAuth = async () => {
-        
+
         const res = await authCtx.login(pwd);
         if (!res) {
             toaster.create({
@@ -205,7 +205,7 @@ export default function PoolList() {
         <Container h="100%">
             {!authCtx.authorized &&
                 <Center h="100%">
-                    <PasswordInput placeholder="Insert your password" size="lg" value={pwd} onChange={(e) => setPwd(e.target.value)}/>
+                    <PasswordInput placeholder="Insert your password" size="lg" value={pwd} onChange={(e) => setPwd(e.target.value)} />
                     <Button type="submit" onClick={handleAuth}>Log in</Button>
                 </Center>}
             {authCtx.authorized &&
@@ -237,53 +237,57 @@ export default function PoolList() {
                                 <Table.Row>
                                     <Table.ColumnHeader htmlWidth="30%">Name</Table.ColumnHeader>
                                     <Table.ColumnHeader htmlWidth="30%">Pool</Table.ColumnHeader>
-                                    <Table.ColumnHeader htmlWidth="10%">Show Feedback</Table.ColumnHeader>
-                                    <Table.ColumnHeader htmlWidth="10%">Show Accuracy</Table.ColumnHeader>
                                     <Table.ColumnHeader htmlWidth="10%"></Table.ColumnHeader>
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
-                                {exps.value.map((exp) => (
+                                {exps.value !== undefined && exps.value.map((exp) => (
                                     <Table.Row key={exp.experiment_id} onClick={() => console.log(exp)}>
                                         <Table.Cell>{exp.name}</Table.Cell>
                                         <Table.Cell>{exp.pool_id}</Table.Cell>
-                                        <Table.Cell>{exp.feedback === 1 ? "true" : "false"}</Table.Cell>
-                                        <Table.Cell>{exp.feedback === 1 ? "true" : "false"}</Table.Cell>
-                                        {/* <Table.Cell><Button onClick={}><LuCirclePlay /> Session </Button></Table.Cell> */}
-                                        <Table.Cell>
-                                            <Dialog.Root
-                                                placement="center"
-                                                motionPreset="slide-in-bottom"
-                                            >
-                                                <Dialog.Trigger asChild>
-                                                    <Button><LuCirclePlay /> Session </Button>
-                                                </Dialog.Trigger>
-                                                <Portal>
-                                                    <Dialog.Backdrop />
-                                                    <Dialog.Positioner>
-                                                        <Dialog.Content>
-                                                            <Dialog.Header>
-                                                                <Dialog.Title>Insert the session name</Dialog.Title>
-                                                            </Dialog.Header>
-                                                            <Dialog.Body>
-                                                                <Field.Root invalid={!validSessionName}>
-                                                                    <Input value={sessionName} onChange={(e) => setSessionName(e.currentTarget.value)} />
-                                                                    <Field.ErrorText>Invalid session name!</Field.ErrorText>
-                                                                </Field.Root>
-                                                            </Dialog.Body>
-                                                            <Dialog.Footer>
-                                                                <Dialog.ActionTrigger asChild>
-                                                                    <Button variant="outline">Cancel</Button>
-                                                                </Dialog.ActionTrigger>
-                                                                <Button onClick={_ => handleStartSession(exp)}>Save</Button>
-                                                            </Dialog.Footer>
-                                                            <Dialog.CloseTrigger asChild>
-                                                                <CloseButton size="sm" />
-                                                            </Dialog.CloseTrigger>
-                                                        </Dialog.Content>
-                                                    </Dialog.Positioner>
-                                                </Portal>
-                                            </Dialog.Root>
+                                        <Table.Cell textAlign={"center"}>
+                                            <ButtonGroup size="sm"  >
+
+                                                <ChakraLink asChild colorPalette="gray" alignSelf="end">
+                                                    <Link href={`admin/experiment/${exp.experiment_id}`} >
+                                                        <Button colorPalette="blue"> <LuPencil /> </Button>
+                                                    </Link>
+                                                </ChakraLink>
+                                                <Dialog.Root
+                                                    placement="center"
+                                                    motionPreset="slide-in-bottom"
+                                                >
+                                                    <Dialog.Trigger asChild>
+                                                        <Button size="sm"><LuCirclePlay /> Session </Button>
+                                                    </Dialog.Trigger>
+                                                    <Portal>
+                                                        <Dialog.Backdrop />
+                                                        <Dialog.Positioner>
+                                                            <Dialog.Content>
+                                                                <Dialog.Header>
+                                                                    <Dialog.Title>Insert the participant name</Dialog.Title>
+                                                                </Dialog.Header>
+                                                                <Dialog.Body>
+                                                                    <Field.Root invalid={!validSessionName}>
+                                                                        <Input value={sessionName} onChange={(e) => setSessionName(e.currentTarget.value)} />
+                                                                        <Field.ErrorText>Invalid participant name!</Field.ErrorText>
+                                                                    </Field.Root>
+                                                                </Dialog.Body>
+                                                                <Dialog.Footer>
+                                                                    <Dialog.ActionTrigger asChild>
+                                                                        <Button variant="outline">Cancel</Button>
+                                                                    </Dialog.ActionTrigger>
+                                                                    <Button onClick={_ => handleStartSession(exp)}>Start session</Button>
+                                                                </Dialog.Footer>
+                                                                <Dialog.CloseTrigger asChild>
+                                                                    <CloseButton size="sm" />
+                                                                </Dialog.CloseTrigger>
+                                                            </Dialog.Content>
+                                                        </Dialog.Positioner>
+                                                    </Portal>
+                                                </Dialog.Root>
+
+                                            </ButtonGroup>
                                         </Table.Cell>
                                     </Table.Row>
                                 ))}
@@ -314,7 +318,7 @@ export default function PoolList() {
                             <Portal>
                                 <Select.Positioner>
                                     <Select.Content>
-                                        {collectionSession.items.map((e,idx) => (
+                                        {collectionSession.items.map((e, idx) => (
                                             <Select.Item item={e.username} key={idx}>
                                                 {e.username}
                                                 <Select.ItemIndicator />
