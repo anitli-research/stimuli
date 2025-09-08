@@ -3,16 +3,20 @@ import { useState, useEffect } from "react"
 import { useAsync } from "react-use"
 import { useParams } from 'next/navigation'
 import { Center, Container, Flex, Spinner, Image, Button, Stack, Text, VStack } from "@chakra-ui/react";
-import { getExperimentByName } from "../../../_utilities/ExperimentService"
-import { createSession, finishSession } from "../../../_utilities/sessionService"
-import { submitResponse } from "../../../_utilities/trialService"
+import { getExperimentByName } from "@/app/_utilities/ExperimentService"
+import { createSession, finishSession } from "@/app/_utilities/sessionService"
+import { submitResponse } from "@/app/_utilities/trialService"
 import { toaster } from "@/components/ui/toaster"
 import { useRouter } from 'next/navigation';
 import { ospfGetURLs } from "@/app/_utilities/ospf";
 import { CiFaceFrown, CiFaceSmile } from "react-icons/ci";
+import { useSearchParams } from 'next/navigation'
 
-export default function Session({ params }) {
-    const { experimentName, userName } = useParams();
+export default function Session() {
+    const searchParams = useSearchParams();
+    const experimentName = searchParams.get('experimentName')
+    const userName = searchParams.get('userName')
+
     const [fail, setFail] = useState(false);
     const [sessionId, setSessionId] = useState(null);
     const [trials, setTrials] = useState(null);

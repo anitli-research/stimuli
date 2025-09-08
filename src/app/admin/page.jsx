@@ -67,7 +67,10 @@ export default function PoolList() {
             setValidSessionName(false);
             return;
         }
-        router.push(`/session/${exp.name}/${sessionName}`)
+        const params = new URLSearchParams();
+        params.set("experimentName", exp.name);
+        params.set("userName", sessionName);
+        router.push(`/session?${params.toString()}`);
     };
 
     const collectionSession = useMemo(() => {
