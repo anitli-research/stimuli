@@ -45,7 +45,8 @@ app.use(bodyParser.json());
 const port = process.env.PORT || 3001;
 
 app.get('/api', (req, res) => {
-  res.send(`<h5 style="color:green">Function online!!</h5>`)})
+  res.send(`<h5 style="color:green">Function online!!</h5>`)
+})
 
 const basicAuth = (req, res, next) => {
   const authHeader = req.headers["authorization"];
@@ -280,10 +281,14 @@ app.post("/api/experiment/:experimentName", upload.none(), async (req, res) => {
     const connection = await dbpool.getConnection();
     try {
       await connection.beginTransaction();
+      // todo change name, acc
+      // Update exp
+      const exp_upd = "UPDATE `experiments` SET `name`=?,`pool_id`=?,`accuracy`=? WHERE name=?";
+      const exp_v = [req.body.name, req.body.pool_id, req.body.accuracy === "on", exp_name]
+      const [exp_rows, exp_fields] = await connection.query(exp_upd, exp_v);
 
-      // TODO: Check names and if we have blocks
-      const q = `DELETE FROM experiments WHERE "name" = ?;`
-      const values = [exp_name]
+      const q = `SELECT * FROM experiments WHERE name = ?;`
+      const values = [req.params.experimentName]
 
       const [rows, fields] = await dbpool.query(q, values).catch(e => {
         console.log(e);
@@ -291,50 +296,70 @@ app.post("/api/experiment/:experimentName", upload.none(), async (req, res) => {
         return;
       });
 
-      // if (rows.length != 1) {
-      //   console.log(`Experiment ${req.params.experimentName} not found.`);
-      //   res.status(404);
-      //   return;
-      // }
+      const experiment_id = rows[0].experiment_id;
 
-      const q_exp = 'INSERT INTO experiments(`name`, `pool_id`) VALUES (?, ?)';
-      const vals_exp = [req.body.name, req.body.pool_id];
-      try {
-        const [exp_rows, exp_fields] = await connection.query(q_exp, vals_exp);
-        const experiment_id = exp_rows.insertId;
-        // let rel_ids = [];
-        const q_block = 'INSERT INTO blocks(`experiment_id`, `block_idx`, `type`, `n_trials`, `n_dist`, `feedback`, `accuracy`) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        const block_ids = blocks.map(async (block, block_idx) => {
-          const q_values = [experiment_id, block_idx, block.type, block.n_trials, block.n_dist, block.feedback, block.accuracy];
-          const [block_rows, block_fields] = await connection.query(q_block, q_values);
-          console.log(block.rel);
-          const q_rel = 'INSERT INTO `relations`(`block_id`, `l`, `r`) VALUES (?, ?, ?)';
-          for (const rel_k in block.rel) {
-            for (const stId_idx in rel[rel_k]) {
-              const stId = rel[rel_k][stId_idx];
-              const [rel_rows, rel_fields] = await connection.query(q_rel, [block_rows.insertId, rel_k, stId]);
-              // rel_ids.push(rel_rows.insertId);
-            }
+      console.log(experiment_id);
+      const block_d = "DELETE FROM `blocks` WHERE experiment_id = ?";
+      const block_dv = [experiment_id]
+      await connection.query(block_d, block_dv);
+
+
+
+
+      // // update each block
+      // const blk_upd = "UPDATE `blocks` SET `experiment_id`=?,`type`=?,`n_trials`=?,`n_dist`=?,`feedback`=?,`accuracy? WHERE experiment_id = ? and block_idx = ? ";
+      // await Promise.all(blocks.map(async (block, block_idx) => {
+      //   // const blk_v = [block.type, block.n_trials, block.n_dist, block.feedback === "on", block.accuracy === "on", block.block_id, experiment_id, block_idx];
+      //   // console.log(blk_v);
+      //   // const [blk_rows, blk_fields] = await connection.query(blk_upd, blk_v);
+
+      // }));
+
+      // delete and insert execding blocks
+
+      //update each relation
+      // const rel_upd = "UPDATE `relations` SET ,`l`='[value-3]',`r`='[value-4]' WHERE `block_id`=";
+      // await Promise.all(blocks.map(async (block, block_idx) => {
+      //   const blk_v = [block.type, block.n_trials, block.n_dist, block.feedback === "on",  block.accuracy === "on", block.block_id, experiment_id, block_idx];
+      //   console.log(blk_v);
+      //   const [blk_rows, blk_fields] = await connection.query(blk_upd, blk_v);
+      // }));
+      // delete extra relations
+
+
+
+      const q_block = 'INSERT INTO blocks(`experiment_id`, `block_idx`, `type`, `n_trials`, `n_dist`, `feedback`, `accuracy`) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      const block_ids = blocks.map(async (block, block_idx) => {
+        const q_values = [experiment_id, block_idx, block.type, block.n_trials, block.n_dist, block.feedback, block.accuracy];
+        const [block_rows, block_fields] = await connection.query(q_block, q_values);
+        console.log(block.rel);
+        const q_rel = 'INSERT INTO `relations`(`block_id`, `l`, `r`) VALUES (?, ?, ?)';
+        for (const rel_k in block.rel) {
+          for (const stId_idx in rel[rel_k]) {
+            const stId = rel[rel_k][stId_idx];
+            const [rel_rows, rel_fields] = await connection.query(q_rel, [block_rows.insertId, rel_k, stId]);
+            // rel_ids.push(rel_rows.insertId);
           }
-          return block_rows.insertId;
-        }, blocks);
+        }
+        return block_rows.insertId;
+      }, blocks);
 
-        await Promise.all(block_ids);
+      await Promise.all(block_ids);
 
-        await connection.commit();
-        dbpool.releaseConnection(connection);
-        res.status(201).send({ "experiment_id": experiment_id });
-      } catch (e) {
-        await connection.rollback();
-        throw e;
-      }
+      await connection.commit();
+      dbpool.releaseConnection(connection);
+      res.sendStatus(201);
+      return;
     } catch (e) {
+      console.log(e)
+      await connection.rollback();
       dbpool.releaseConnection(connection);
       throw e;
     }
   } catch (e) {
-    res.status(400).send(e.message);
+    throw e;
   }
+  res.status(400);
 });
 
 app.get("/api/experiment/", upload.none(), async (req, res) => {
@@ -445,7 +470,7 @@ app.post("/api/session/", upload.none(), async (req, res) => {
 
   let relMap = {};
   block_ids.map(id => relMap[id] = {});
-  
+
   for (let i = 0; i < rels.length; i++) {
     if (!(rels[i].l in relMap[rels[i].block_id])) {
       relMap[rels[i].block_id][rels[i].l] = [];
@@ -487,7 +512,7 @@ app.post("/api/session/", upload.none(), async (req, res) => {
     let block = blocks[block_idx];
     console.log(block.block_id);
     let rel = relMap[block.block_id];
-    const rel_keys =  Object.keys(rel);
+    const rel_keys = Object.keys(rel);
     for (let trial_idx = 0; trial_idx < block.n_trials; trial_idx++) {
       let stimulus, expected;
       if (block.type !== 1 && rel_keys.length === 0) {
@@ -577,10 +602,10 @@ app.get("/api/block/:experimentId", upload.none(), async (req, res) => {
 
 // Relation
 
-app.get("/api/relation/:experimentId", upload.none(), async (req, res) => {
-  console.log(`GET /relation/${req.params.experimentId} Get relation by experiment id`);
-  const q = `SELECT * FROM relations WHERE experiment_id = ?;`
-  const values = [req.params.experimentId]
+app.get("/api/relation/:blockId", upload.none(), async (req, res) => {
+  console.log(`GET /relation/${req.params.blockId} Get relation by experiment id`);
+  const q = `SELECT * FROM relations WHERE block_id = ?;`
+  const values = [req.params.blockId]
 
   const [rows, fields] = await dbpool.query(q, values).catch(e => {
     console.log(e);

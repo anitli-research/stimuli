@@ -10,11 +10,15 @@ import {
 } from "@chakra-ui/react"
 import { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller, useController } from "react-hook-form"
-import { ospfGetPools, ospfGetStimuli } from "../../../_utilities/ospf"
+import { ospfGetPools, ospfGetStimuli } from "@/app/_utilities/ospf"
 import { useAsync } from "react-use"
-import { createExperiment } from "../../../_utilities/ExperimentService"
+import { getExperimentByName, createExperiment, updateExperiment } from "@/app/_utilities/ExperimentService"
 import { LuPlus, LuFlaskConical, LuTrash2 } from 'react-icons/lu'
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation'
+import { toaster } from "./ui/toaster";
+import { getBlocks } from "@/app/_utilities/blockService";
+import { getRelation } from "@/app/_utilities/relationService";
 
 const block_types = createListCollection({
   items: [
@@ -28,6 +32,12 @@ const block_types = createListCollection({
 export default function Experiment() {
   const router = useRouter();
   const title = "Add a new experiment"
+  const searchParams = useSearchParams();
+  let expName = null;
+  if (searchParams.has("experimentName")) {
+    expName = searchParams.get('experimentName');
+  }
+
   useEffect(() => {
     document.title = title
   }, [title])
@@ -42,6 +52,7 @@ export default function Experiment() {
   } = useForm();
 
   const [blocks, setBlocks] = useState([]);
+  const [isUpdate, setIsUpdate] = useState(false);
 
   const poolId = useController({
     control: control,
@@ -87,7 +98,12 @@ export default function Experiment() {
       "pool_id": data.poolId[0]
     };
     console.log(exp);
-    await createExperiment(exp, blocks, relation);
+    if (isUpdate) {
+      console.log("LLLLLLLLL");
+      await updateExperiment(exp, blocks, relation);
+    } else {
+      await createExperiment(exp, blocks, relation);
+    }
     router.push("/admin");
   };
 
@@ -132,6 +148,7 @@ export default function Experiment() {
   };
 
   const updateBlockType = (block_idx, type) => {
+    console.log(type);
     let new_blocks = blocks.map((block, idx) =>
       idx === block_idx ? { ...block, type: type } : block
     )
@@ -174,6 +191,50 @@ export default function Experiment() {
     setValue("stId", null);
     setValue("related", []);
   };
+
+  if (expName !== null) {
+    useEffect(() => {
+      (async () => {
+        setLoading(true);
+        console.log("get the data");
+        let exp, blks;
+        // let rel = {};
+        try {
+          exp = await getExperimentByName(expName);
+          blks = await (Promise.all((await getBlocks(exp)).map(async b => {
+            console.log(b);
+            const rels = await getRelation(b.block_id);
+            const rel = {};
+            rels.map(element => {
+              if (rel[element.l] !== undefined) {
+                rel[element.l].push(element.r)
+              } else {
+                rel[element.l] = [element.r];
+              }
+            });
+            return { n_dist: b.n_dist, type: b.type, n_trials: b.n_trials, feedback: b.feedback === 1, accuracy: b.accuracy === 1, rel: rel };
+          })));
+          console.log("xadasdasds");
+          console.log(blks);
+          setValue("poolId", [exp.pool_id]);
+          stimuli.loading
+          setValue("name", exp.name);
+          setValue("accuracy", exp.accuracy);
+          setBlocks(blks);
+          // setRelation(rel);
+          setIsUpdate(true);
+        } catch (e) {
+          console.log(e);
+          toaster.create({
+            description: "Invalid experiment name!",
+            type: "error",
+          });
+        }
+        console.log(exp);
+        setLoading(false);
+      })()
+    }, []);
+  }
 
   return <Container>
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -257,7 +318,7 @@ export default function Experiment() {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {blocks.map((block, block_idx) => (
+                {!stimuli.error && blocks.map((block, block_idx) => (
                   // <Table.Row key={block.id} onClick={() => handleTableClick(block_idx)}  data-selected={selBlock === block_idx ? "" : undefined}>
                   <Table.Row key={block_idx} data-selected={selBlock === block_idx ? "" : undefined}>
                     <Table.Cell>
@@ -272,7 +333,7 @@ export default function Experiment() {
                     </Table.Cell>
                     <Table.Cell textAlign="center">{block_idx + 1}</Table.Cell>
                     <Table.Cell>
-                      <NumberInput.Root defaultValue={1} min={1} onValueChange={(e) => updateBlockNTrials(block_idx, parseInt(e.value))}>
+                      <NumberInput.Root defaultValue={1} min={1} value={block.n_trials} onValueChange={(e) => updateBlockNTrials(block_idx, parseInt(e.value))}>
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
@@ -282,7 +343,7 @@ export default function Experiment() {
                       </NumberInput.Root>
                     </Table.Cell>
                     <Table.Cell>
-                      <NumberInput.Root defaultValue={0} min={0} max={stimuli.value.length - 1} onValueChange={(e) => updateBlockNDist(block_idx, parseInt(e.value))}>
+                      <NumberInput.Root defaultValue={0} min={0} max={stimuli.value.length - 1} value={block.n_dist} onValueChange={(e) => updateBlockNDist(block_idx, parseInt(e.value))}>
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
@@ -292,7 +353,8 @@ export default function Experiment() {
                       </NumberInput.Root>
                     </Table.Cell>
                     <Table.Cell textAlign="end">
-                      <Select.Root required collection={block_types} size="sm" onValueChange={(e) => updateBlockType(block_idx, e.value[0])}>
+                      {/* <Select.Root required value={block.type} collection={block_types} size="sm" onValueChange={(e) => updateBlockType(block_idx, e.value[0])}> */}
+                      <Select.Root required collection={block_types} size="sm"  defaultValue={[block.type]} onValueChange={(e) => updateBlockType(block_idx, e.value[0])}>
                         <Select.HiddenSelect />
                         <Select.Control>
                           <Select.Trigger>
@@ -404,7 +466,7 @@ export default function Experiment() {
             </Flex>}
         </Container>
         }
-        <Button colorPalette="blue" type="submit"> <LuFlaskConical /> Create new experiment</Button>
+        <Button colorPalette="blue" type="submit"> <LuFlaskConical /> {isUpdate ? "Create new" : "Update"} experiment</Button>
       </Stack>
     </form>
   </Container >

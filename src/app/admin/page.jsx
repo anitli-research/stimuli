@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { useEffect, useState, useMemo, useContext } from "react"
 import { useAsync } from "react-use"
 import { getPools, getStimuliFromPoolId, getStimulus } from "../_utilities/PoolService"
-import { getExperiments } from "../_utilities/ExperimentService"
-import { ospfGetPools } from "../_utilities/ospf"
+import { getExperiments } from "@/app/_utilities/ExperimentService"
+import { ospfGetPools } from "@/app/_utilities/ospf"
 import { toaster } from "@/components/ui/toaster"
 import { useRouter } from 'next/navigation';
-import { getSessions } from "../_utilities/sessionService"
-import { getResponses } from "../_utilities/responseService"
+import { getSessions } from "@/app/_utilities/sessionService"
+import { getResponses } from "@/app/_utilities/responseService"
 import { PasswordInput } from "@/components/ui/password-input"
-import { AuthContext } from '../../components/ui/AuthProvider';
+import { AuthContext } from "@/components/ui/AuthProvider";
 
 
 export default function PoolList() {
@@ -226,7 +226,7 @@ export default function PoolList() {
                     </Heading>
                     <PoolSelect />
                     <ChakraLink asChild colorPalette="gray" alignSelf="end">
-                        <Link href="admin/experiment/add" >
+                        <Link href="admin/experiment" >
                             <Button colorPalette="blue" minW="30%">
                                 <LuFlaskConical /> New Experiment
                             </Button>
@@ -252,7 +252,7 @@ export default function PoolList() {
                                             <ButtonGroup size="sm"  >
 
                                                 <ChakraLink asChild colorPalette="gray" alignSelf="end">
-                                                    <Link href={`admin/experiment/${exp.name}`} >
+                                                    <Link href={`admin/experiment?experimentName=${exp.name}`} >
                                                         <Button colorPalette="blue"> <LuPencil /> </Button>
                                                     </Link>
                                                 </ChakraLink>

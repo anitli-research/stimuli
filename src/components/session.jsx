@@ -14,8 +14,8 @@ import { useSearchParams } from 'next/navigation'
 
 export default function Session() {
     const searchParams = useSearchParams();
-    const experimentName = searchParams.get('experimentName')
-    const userName = searchParams.get('userName')
+    const experimentName = searchParams.get('experimentName');
+    const userName = searchParams.get('userName');
 
     const [fail, setFail] = useState(false);
     const [sessionId, setSessionId] = useState(null);
